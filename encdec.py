@@ -17,7 +17,7 @@ try:
 except ModuleNotFoundError:
     print("Can't find chacha20poly1305")
     print("run \"pip install chacha20poly1305\"")
-    pass
+    exit(0)
 
 version = "0.1"
 cryptext = ".cha"
@@ -32,11 +32,6 @@ def usage(pname):
     print("\n")
 
 def is_binary(filename):
-    """
-    Return true if the given filename appears to be binary.
-    File is considered to be binary if it contains a NULL byte.
-    FIXME: This approach incorrectly reports UTF-16 as binary.
-    """
     with open(filename, 'rb') as f:
         for block in f:
             if b'\0' in block:
@@ -64,12 +59,12 @@ def main():
     d = 0
     v = 0
 
-    if ( len(sys.argv) > 2):
+    if ( len(sys.argv) == 3):
         if ( sys.argv[1] == "-c" ):
             c = 1
         if ( sys.argv[1] == "-d" ):
             d = 1
-    elif ( sys.argv[1] == "-v" ):
+    elif ( len(sys.argv) == 2 and sys.argv[1] == "-v" ):
         v = 1
     else:
         usage(pname)
