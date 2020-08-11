@@ -19,7 +19,7 @@ except ModuleNotFoundError:
     print("run \"pip install chacha20poly1305\"")
     exit(0)
 
-version = "0.1"
+version = "0.2"
 cryptext = ".cha"
 
 def usage(pname):
@@ -28,24 +28,36 @@ def usage(pname):
     print("{}: -v".format(pname))
     print("-c encrypt file (output to file.cha)")
     print("-d decrypt file.cha (output to file)")
+    print("-dt decrypt file.cha (txt output sent to terminal)")
     print("-v print version")
     print("\n")
 
-def is_binary(filename):
-    with open(filename, 'rb') as f:
-        for block in f:
-            if b'\0' in block:
-                return True
+def isBinary(s):
+    encodings = 'ascii', 'utf-8', 'utf-16'
+    for enc in encodings:
+        try:
+            s.decode(enc)
+        except UnicodeDecodeError:
+            return True
     return False
 
 
-def getkey():
-    key = getpass.getpass("Enter passphrase: ")
-    key2 = getpass.getpass("Check entered passphrase: ")
-    if (key != key2):
-        print("passphrase does not match!")
-        print("exiting...")
+def getkey(option):
+    try:
+        key = getpass.getpass("Enter passphrase: ")
+    except KeyboardInterrupt:
+        print("\nExiting...\n")
         exit(0)
+    if (option == "-c"):
+        try:
+            key2 = getpass.getpass("Check entered passphrase: ")
+        except KeyboardInterrupt:
+            print("\nExiting...\n")
+            exit(0)
+        if (key != key2):
+            print("passphrase does not match!")
+            print("exiting...")
+            exit(0)
     key_32 = hashlib.sha256(key.encode()).digest()
     cipher = ChaCha20Poly1305(key_32)
     nonce_12 = hashlib.sha3_256(key.encode()).digest()[:12]
@@ -57,6 +69,7 @@ def main():
     pname = sys.argv[0]
     c = 0
     d = 0
+    dt = 0
     v = 0
 
     if ( len(sys.argv) == 3):
@@ -64,6 +77,9 @@ def main():
             c = 1
         if ( sys.argv[1] == "-d" ):
             d = 1
+        if ( sys.argv[1] == "-dt" ):
+            d = 1
+            dt = 1
     elif ( len(sys.argv) == 2 and sys.argv[1] == "-v" ):
         v = 1
     else:
@@ -81,33 +97,40 @@ def main():
             exit(0)
         with open(tobcrypt, 'rb') as file:
             data = file.read()
-        hkey, hnonce, cip = getkey()
+        hkey, hnonce, cip = getkey("-c")
         ciphertext = cip.encrypt(hnonce,  data)
         with open(encrypted, 'wb') as encfile:
             encfile.write(ciphertext)
         
     if (d):
         encrypted=sys.argv[2]
+        decrypted=sys.argv[2][:-4]
         if(encrypted.find(cryptext) < 0):
             print("file {} needs to be a {} encrypted file".format(encrypted,cryptext))
             exit(0)
-        decrypted=sys.argv[2][:-4]
+        if (not dt):
+            if (os.path.exists(decrypted)):
+                print("file {} does already exist".format(decrypted))
+                exit(0)
         if (not os.path.exists(encrypted)):
             print("file {} doesn't exist".format(encrypted))
             exit(0)
-        if (os.path.exists(decrypted)):
-            print("file {} does already exist".format(decrypted))
-            exit(0)
         with open(encrypted, 'rb') as file:
             datacipher = file.read()
-        hkey, hnonce, cip = getkey()
+        hkey, hnonce, cip = getkey("-d")
         try:
             plaintext = cip.decrypt(hnonce, datacipher)
         except:
             print("Decryption error")
             exit(0)
-        with open(decrypted, 'wb') as decrfile:
-            decrfile.write(plaintext)
+        if (dt):
+            if (isBinary(plaintext)):
+                print("Decrypted file is not a text file\nCan't output on terminal\nExiting...")
+            else:
+                print(plaintext.decode())
+        else:
+            with open(decrypted, 'wb') as decrfile:
+                decrfile.write(plaintext)
 
     if (v):
         print("Version {}".format(version))
