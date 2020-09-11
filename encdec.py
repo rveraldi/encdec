@@ -19,7 +19,7 @@ except ModuleNotFoundError:
     print("run \"pip install chacha20poly1305\"")
     exit(0)
 
-version = "0.2"
+version = "0.3"
 cryptext = ".cha"
 
 def usage(pname):
@@ -43,6 +43,7 @@ def isBinary(s):
 
 
 def getkey(option):
+    nonce_12 = 0
     try:
         key = getpass.getpass("Enter passphrase: ")
     except KeyboardInterrupt:
@@ -58,9 +59,11 @@ def getkey(option):
             print("passphrase does not match!")
             print("exiting...")
             exit(0)
+        else:
+            nonce_12 = os.urandom(12)
     key_32 = hashlib.sha256(key.encode()).digest()
     cipher = ChaCha20Poly1305(key_32)
-    nonce_12 = hashlib.sha3_256(key.encode()).digest()[:12]
+    #nonce_12 = hashlib.sha3_256(key.encode()).digest()[:12]
     return key_32,nonce_12,cipher
 
 
@@ -100,6 +103,7 @@ def main():
         hkey, hnonce, cip = getkey("-c")
         ciphertext = cip.encrypt(hnonce,  data)
         with open(encrypted, 'wb') as encfile:
+            encfile.write(hnonce)
             encfile.write(ciphertext)
         
     if (d):
@@ -116,8 +120,9 @@ def main():
             print("file {} doesn't exist".format(encrypted))
             exit(0)
         with open(encrypted, 'rb') as file:
+            hnonce = file.read(12)
             datacipher = file.read()
-        hkey, hnonce, cip = getkey("-d")
+        hkey, _ , cip = getkey("-d")
         try:
             plaintext = cip.decrypt(hnonce, datacipher)
         except:
