@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 #
-# please installa chacha-poly1305 support before running
+# please install chacha-poly1305 support before running
 #
-# pip install chacha20poly1305
+# pip3 install chacha20poly1305
 #
 #
 
@@ -24,8 +24,8 @@ cryptext = ".cha"
 
 def usage(pname):
     print("\n")
-    print("{}: -c|-d filename".format(pname))
-    print("{}: -v".format(pname))
+    print("{} -c|-d filename".format(pname))
+    print("{} -v".format(pname))
     print("-c encrypt file (output to file.cha)")
     print("-d decrypt file.cha (output to file)")
     print("-dt decrypt file.cha (txt output sent to terminal)")
